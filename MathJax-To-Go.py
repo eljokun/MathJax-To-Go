@@ -3,7 +3,7 @@ from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QLabel, QPushButton, QWidget, QApplication, QMainWindow, QTextEdit, QVBoxLayout, \
     QHBoxLayout, QFileDialog
 
-ver = "v1.5"
+ver = "v1.6"
 class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -209,34 +209,28 @@ class MainWindow(QMainWindow):
 
     def getSvg(self, callback):
         self.view.page().toHtml(callback)
-
-    def handleSvg(self, svg):
-        self.svgData = svg
+    def extractSvgFromHTML(self, html):
+        start = html.find('<svg')
+        end = html.find('</svg>', start)
+        self.svgData = html[start:end + 6].replace('currentColor', 'black')
 
     def copySvg(self):
         def callback(html):
-            # Extract the SVG data from the HTML content
-            start = html.find('<svg')
-            end = html.find('</svg>', start)
-            svg = html[start:end + 6]
-            svg = svg.replace('currentColor', 'black')
+            self.extractSvgFromHTML(html)
             clipboard = QApplication.clipboard()
             mimeData = QMimeData()
-            mimeData.setData('image/svg+xml', QByteArray(svg.encode()))
+            mimeData.setData('image/svg+xml', QByteArray(self.svgData.encode()))
             clipboard.setMimeData(mimeData)
         self.getSvg(callback)
 
     def saveSvg(self):
         def callback(html):
-            start = html.find('<svg')
-            end = html.find('</svg>', start)
-            svg = html[start:end + 6]
-            svg = svg.replace('currentColor', 'black')
+            self.extractSvgFromHTML(html)
             # File dialog
             savefile, _ = QFileDialog.getSaveFileName(self, 'Save SVG', '', 'SVG files (*.svg)')
             if savefile and not len(self.equation)==0:
                 with open(savefile, 'w') as f:
-                    f.write(svg)
+                    f.write(self.svgData)
         self.getSvg(callback)
 
     def toggleAutoCopy(self):
