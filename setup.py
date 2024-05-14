@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='MathJax-To-Go.py',
-    version='1.4',
+    version='1.5',
     packages=[''],
     url='github.com/eljokun',
     license='AGPL-3.0',

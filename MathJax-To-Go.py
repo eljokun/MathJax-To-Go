@@ -1,9 +1,9 @@
 from PySide6.QtCore import Qt, QMimeData, QByteArray
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QLabel, QPushButton, QWidget, QApplication, QMainWindow, QTextEdit, QVBoxLayout, \
-    QHBoxLayout
+    QHBoxLayout, QFileDialog
 
-ver = "v1.4"
+ver = "v1.5"
 class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -11,12 +11,13 @@ class MainWindow(QMainWindow):
 
         # Properties and equation init
         self.svgData = ""
+        self.equation = r"\Large \text{you gonna type something or what?}"
         self.autoCopy = False
         self.physicsEnabled = False
         self.colorsv2Enabled = False
         self.displayStyle = True
         self.equation_edit = QTextEdit()
-        self.equation_edit.setPlaceholderText("(x+y)^2 = x^2 + y^2")
+        self.equation_edit.setPlaceholderText("Type Equation Here")
         self.equation_edit.setAcceptRichText(False)
 
         # Create layout
@@ -34,7 +35,6 @@ class MainWindow(QMainWindow):
         self.view.loadFinished.connect(self.update_mathjax)
         interactiveWindowLayout.addWidget(self.view)
 
-
         # Add svg copy button
         self.copyButton = QPushButton("Copy SVG")
         self.copyButton.setStyleSheet("background-color: darkgreen")
@@ -44,6 +44,11 @@ class MainWindow(QMainWindow):
         self.autoCopyButton = QPushButton("Auto-Copy")
         self.autoCopyButton.setStyleSheet("background-color: darkred")
         self.autoCopyButton.clicked.connect(self.toggleAutoCopy)
+
+        # Add button to save svg as file
+        self.saveButton = QPushButton("Save SVG")
+        self.saveButton.setStyleSheet("background-color: #222288")
+        self.saveButton.clicked.connect(self.saveSvg)
 
         # Add button to toggle using physics package
         self.usePhysicsButton = QPushButton("Physics")
@@ -72,6 +77,7 @@ class MainWindow(QMainWindow):
         optionLowerLayout.addStretch()
         optionLowerLayout.addWidget(self.developerLabel)
         optionLowerLayout.addStretch()
+        optionLowerLayout.addWidget(self.saveButton)
         optionLowerLayout.addWidget(self.autoCopyButton)
         optionLowerLayout.addWidget(self.copyButton)
 
@@ -169,6 +175,7 @@ class MainWindow(QMainWindow):
         central_widget = QWidget()
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
+        self.update_mathjax()
         self.equation_edit.textChanged.connect(self.update_mathjax)
 
     def toggleDisplayStyle(self):
@@ -212,13 +219,24 @@ class MainWindow(QMainWindow):
             start = html.find('<svg')
             end = html.find('</svg>', start)
             svg = html[start:end + 6]
-
             svg = svg.replace('currentColor', 'black')
             clipboard = QApplication.clipboard()
             mimeData = QMimeData()
             mimeData.setData('image/svg+xml', QByteArray(svg.encode()))
             clipboard.setMimeData(mimeData)
+        self.getSvg(callback)
 
+    def saveSvg(self):
+        def callback(html):
+            start = html.find('<svg')
+            end = html.find('</svg>', start)
+            svg = html[start:end + 6]
+            svg = svg.replace('currentColor', 'black')
+            # File dialog
+            savefile, _ = QFileDialog.getSaveFileName(self, 'Save SVG', '', 'SVG files (*.svg)')
+            if savefile and not len(self.equation)==0:
+                with open(savefile, 'w') as f:
+                    f.write(svg)
         self.getSvg(callback)
 
     def toggleAutoCopy(self):
@@ -228,9 +246,7 @@ class MainWindow(QMainWindow):
         self.copyButton.setStyleSheet("background-color: gray" if self.autoCopy else "background-color: darkgreen")
 
     def addTextAtCursorPosition(self, text):
-        cursor = self.equation_edit.textCursor()
-        cursor.insertText(text)
-        self.equation_edit.setTextCursor(cursor)
+        self.equation_edit.textCursor().insertText(text)
 
     def wrapSelectedText(self, left, right):
         cursor = self.equation_edit.textCursor()
@@ -328,18 +344,23 @@ class MainWindow(QMainWindow):
         </body>
         </html>
         """.format(packages=packages_str, loader_packages=loader_packages_str, mathjax_script=self.mathjax_script)
+        self.update_mathjax()
         self.view.setHtml(html)
 
     def update_mathjax(self):
-        if self.physicsEnabled:
-            equation = (r" \require{physics} " + (r" \displaystyle " if self.displayStyle else r"") + self.equation_edit.toPlainText()).replace("\\", "\\\\").replace("\n","\\n").replace("'", "\\'")
-        else:
-            equation = ((r" \displaystyle " if self.displayStyle else r"") + self.equation_edit.toPlainText()).replace("\\", "\\\\").replace("\n","\\n").replace("'", "\\'")
+        plainTextEquation = self.equation_edit.toPlainText()
+        def formatted(plainTxtEq):
+            if not plainTxtEq:
+                plainTxtEq = r"\Large \text{you gonna type something or what?}"
+            return plainTxtEq.replace("\\", "\\\\").replace("\n","\\n").replace("'", "\\'")
+        physicsPreamble = formatted(r"\require{physics} ") if self.physicsEnabled else r""
+        displayStylePreamble = formatted(r"\displaystyle ") if self.displayStyle else r""
+        self.equation = f"{displayStylePreamble}{physicsPreamble}{formatted(plainTextEquation)}"
         script = r"""
         var element = document.getElementById('math-content');
         var svg = MathJax.tex2svg('{}').outerHTML;
         element.innerHTML = svg;
-        """.format(equation)
+        """.format(self.equation)
         self.view.page().runJavaScript(script)
         if self.autoCopy:
             self.copySvg()
