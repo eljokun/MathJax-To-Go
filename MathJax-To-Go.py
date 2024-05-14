@@ -3,7 +3,7 @@ from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QLabel, QPushButton, QWidget, QApplication, QMainWindow, QTextEdit, QVBoxLayout, \
     QHBoxLayout, QFileDialog
 
-ver = "v1.6"
+ver = "v1.6.1"
 class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -70,7 +70,7 @@ class MainWindow(QMainWindow):
         # Add developer label :3
         self.developerLabel = QLabel("ⓘ Developed with love by github.com/eljokun")
 
-        # Add preamble button toggles to layout
+        # Add button toggles to layout
         optionLowerLayout.addWidget(self.preambleLabel)
         optionLowerLayout.addWidget(self.usePhysicsButton)
         optionLowerLayout.addWidget(self.useColorsv2Button)
@@ -363,5 +363,7 @@ class MainWindow(QMainWindow):
 if __name__ == "__main__":
     app = QApplication([])
     window = MainWindow()
+    # Hide console
+    window.setAttribute(Qt.WA_MacShowFocusRect, 0)
     window.show()
     app.exec()
