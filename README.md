@@ -4,9 +4,10 @@ Mathjax To Go is a python-contained MathJax TeX expression parser with added fun
 # Dependencies
 The only dependency is PySide6, and whatever dependencies it may have.
 
-# Installation and Usage
+# Installation
 To install, simply acquire the main script `Mathjax-To-Go.py` and run, either by cloning into this repo or just downloading the code, either works fine.
 Click, run and enjoy.
+If you do not have PySide6, install it via pip `pip install PySide6` and run again.
 
 # As-is
 This project was created mostly for my own personal use as an engineer looking to save time and not succumb to the eldritch horrors of electronics & communications engineering studies.
