@@ -1,9 +1,9 @@
 from PySide6.QtCore import Qt, QMimeData, QByteArray
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QLabel, QPushButton, QWidget, QApplication, QMainWindow, QTextEdit, QVBoxLayout, \
-    QHBoxLayout, QFileDialog
+    QHBoxLayout, QFileDialog, QInputDialog
 
-ver = "v1.6.1"
+ver = "v1.7"
 class MainWindow(QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -19,9 +19,11 @@ class MainWindow(QMainWindow):
         self.equation_edit = QTextEdit()
         self.equation_edit.setPlaceholderText("Type Equation Here")
         self.equation_edit.setAcceptRichText(False)
+        self.customCDN = False
 
         # Create layout
         layout = QVBoxLayout()
+        topLayout = QHBoxLayout()
         interactiveWindowLayout = QHBoxLayout()
         interactiveWindowLayout.addWidget(self.equation_edit)
         optionInsertionLayout = QVBoxLayout()
@@ -34,6 +36,11 @@ class MainWindow(QMainWindow):
         self.load_mathjax()
         self.view.loadFinished.connect(self.update_mathjax)
         interactiveWindowLayout.addWidget(self.view)
+
+        # Controls label
+        self.controlsLabel = QLabel("ⓘ WebEngine: Click and drag to pan, control-scroll to zoom")
+        topLayout.addStretch()
+        topLayout.addWidget(self.controlsLabel)
 
         # Add svg copy button
         self.copyButton = QPushButton("Copy SVG")
@@ -86,6 +93,12 @@ class MainWindow(QMainWindow):
         self.alwaysOnTopButton.setStyleSheet("background-color: darkred")
         self.alwaysOnTopButton.clicked.connect(self.toggleAlwaysOnTop)
         optionInsertionLayout.addWidget(self.alwaysOnTopButton)
+
+        # Add option to switch CDN
+        self.cdnButton = QPushButton("Switch CDN")
+        self.cdnButton.setStyleSheet("background-color: #222288")
+        self.cdnButton.clicked.connect(self.switchCDN)
+        optionInsertionLayout.addWidget(self.cdnButton)
 
         # Display style toggle
         self.displayStyleButton = QPushButton("Display Style")
@@ -168,6 +181,7 @@ class MainWindow(QMainWindow):
         optionInsertionLayout.addStretch()
 
         # Add layouts to main layout
+        layout.addLayout(topLayout)
         layout.addLayout(interactiveWindowLayout)
         layout.addLayout(optionLowerLayout)
 
@@ -194,6 +208,23 @@ class MainWindow(QMainWindow):
         self.show()
         if wasMaximized:
             self.showMaximized()
+
+    def switchCDN(self):
+        default = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js"
+        if not self.customCDN:
+            cdn, confirm = QInputDialog.getText(self, "Switch CDN", "Enter CDN URL:", text=default)
+            if confirm:
+                self.customCDN = True
+                self.mathjax_script = f'<script type="text/javascript" async src = "{cdn}"> </script>'
+                self.cdnButton.setText("Reset CDN")
+                self.load_mathjax()
+        else:
+            self.customCDN = False
+            self.mathjax_script = f'<script type="text/javascript" async src = "{default}"> </script>'
+            self.cdnButton.setText("Switch CDN")
+            self.load_mathjax()
+        self.cdnButton.setStyleSheet("background-color: darkred" if self.customCDN else "background-color: #222288")
+
 
     def togglePhysics(self):
         self.physicsEnabled = not self.physicsEnabled
@@ -364,6 +395,6 @@ if __name__ == "__main__":
     app = QApplication([])
     window = MainWindow()
     # Hide console
-    window.setAttribute(Qt.WA_MacShowFocusRect, 0)
+    window.setAttribute(Qt.WA_MacShowFocusRect, False)
     window.show()
     app.exec()
